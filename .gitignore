@@ -1,0 +1,9 @@
+# Ignore Python virtual environment
+venv/
+__pycache__/
+
+# Ignore editor settings
+.vscode/
+
+# Optionally ignore stockfish.exe
+# stockfish.exe
