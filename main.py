@@ -1,5 +1,4 @@
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Query
 import subprocess
 
 app = FastAPI()
@@ -9,26 +8,27 @@ def root():
     return {"message": "Stockfish API is running"}
 
 @app.get("/analyze")
-def analyze(fen: str, depth: int = 15):
+def analyze(
+    fen: str = Query(..., description="FEN string of the position"),
+    depth: int = Query(10, description="Search depth (e.g., 10-20)")
+):
     try:
         # Start Stockfish process
         process = subprocess.Popen(
-            ["stockfish.exe"],   # If you get "file not found", give the full path here
+            ["./bin/stockfish"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
-            bufsize=1
+            bufsize=1,
         )
 
-        # Send "uci" to initialize
+        # Initialize UCI
         process.stdin.write("uci\n")
         process.stdin.flush()
 
-        # Wait for "uciok"
         while True:
             line = process.stdout.readline()
-            print(f"Engine output: {line.strip()}")
             if "uciok" in line:
                 break
 
@@ -36,14 +36,15 @@ def analyze(fen: str, depth: int = 15):
         process.stdin.write(f"position fen {fen}\n")
         process.stdin.flush()
 
-        # Start analyzing
+        # Start analysis
         process.stdin.write(f"go depth {depth}\n")
         process.stdin.flush()
 
-        bestmove = ""
+        bestmove = None
+
+        # Read output lines
         while True:
             line = process.stdout.readline()
-            print(f"Engine output: {line.strip()}")
             if line.startswith("bestmove"):
                 bestmove = line.strip()
                 break
@@ -54,8 +55,10 @@ def analyze(fen: str, depth: int = 15):
         process.stderr.close()
         process.kill()
 
-        return JSONResponse({"bestmove": bestmove})
+        if not bestmove:
+            return {"error": "Failed to get best move."}
+
+        return {"bestmove": bestmove}
 
     except Exception as e:
-        # If any error happens, return details
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return {"error": str(e)}
