@@ -7,6 +7,6 @@ unzip -o bin/stockfish.zip -d bin
 
 mv bin/stockfish_16_x64_avx2/stockfish_16_x64_avx2 bin/stockfish
 
-chmod +x bin/stockfish
+chmod +x bin/download_stockfish
 
 echo "Stockfish downloaded and ready."
